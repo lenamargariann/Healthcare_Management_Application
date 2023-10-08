@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Patient Records</title>
+</head>
+<body>
+<header>
+    <h1 style="text-align: center;">Patients Records</h1>
+</header>
+
+<div style="text-align: center;">
+    <form th:action="@{/search}" method="post">
+        <div class="input-group-append">
+            <input type="text" class="form-control" placeholder="Search for a patient..." name="name"
+                   th:value="${userInput}">
+            <span class="input-group-append">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </span>
+        </div>
+    </form>
+</div>
+
+<div>
+    <h2 style="margin-left: 30px">Patients List</h2>
+    <ul style="width: 100%;">
+        <li th:if="${not #lists.isEmpty(patients)}" th:each="patient : ${patients}" id="myList"
+            th:data-patient-id="${patient.id}">
+         <span style="width: 65%;
+           display: inline-block;
+                  margin-left: 30px;
+                  margin: 5px">
+             <span th:text="${patient.firstName}"></span>
+             <span th:text="${patient.lastName}"></span>
+         </span>
+            <span th:text="${patient.gender}"
+                  style="width: 30%;
+                    display: inline-block;
+                  margin-right: 30px;
+                  align-self: end;
+                  padding: 5px"></span>
+        </li>
+        <li th:unless="${not #lists.isEmpty(patients)}">
+            <div style="text-align: center;">No patient data available.</div>
+        </li>
+    </ul>
+</div>
+<script>
+    var listItems = document.querySelectorAll("#myList li");
+
+    listItems.forEach(function (item) {
+        item.addEventListener("click", function () {
+            window.location.href = "/patient/" + item.getAttribute("data-patient-id")
+        });
+    });
+</script>
+
+<script type="module" src="js/UpdateList.js"></script>
+
+</body>
+</html>
