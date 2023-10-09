@@ -26,7 +26,8 @@ public class PatientRepository {
             "gender VARCHAR(255)," +
             "PRIMARY KEY (ID)" +
             ");";
-    private static final String INSERT_SQL = "INSERT INTO patients (first_name, last_name, date_of_birth, gender) VALUES (?, ?, ?, ?)";
+    private final String INSERT_SQL = "INSERT INTO patients (first_name, last_name, date_of_birth, gender) VALUES (?, ?, ?, ?)";
+    private final String GET_LAST = "SELECT * FROM patients ORDER BY ID DESC LIMIT 1;";
     private final String LIST_SQL = "SELECT * FROM patients;";
     private final String GET_PATIENT_BY_ID = "SELECT * FROM patients WHERE ID = ?;";
     private final String FIND_PATIENT_BY_NAME = "SELECT * FROM patients " +
@@ -90,14 +91,33 @@ public class PatientRepository {
         return list;
     }
 
-    public boolean savePatient(Patient patient) {
+    public long savePatient(Patient patient) {
         try (Connection connection = dataSource().getConnection()) {
             PreparedStatement statement = connection.prepareStatement(INSERT_SQL);
             statement.setString(1, patient.getFirstName());
             statement.setString(2, patient.getLastName());
             statement.setString(3, patient.getDateOfBirth());
             statement.setString(4, patient.getGender());
-            return statement.executeUpdate() == 1;
+            statement.executeUpdate();
+            return getLastAddedPatient().getId();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Patient getLastAddedPatient() {
+        try (Connection connection = dataSource().getConnection()) {
+            PreparedStatement st = connection.prepareStatement(GET_LAST);
+            ResultSet set = st.executeQuery();
+            Patient patient = new Patient();
+            while (set.next()) {
+                patient.setId(Long.parseLong(set.getString("id")));
+                patient.setFirstName(set.getString("first_name"));
+                patient.setLastName(set.getString("last_name"));
+                patient.setDateOfBirth(set.getString("date_of_birth"));
+                patient.setGender(set.getString("gender"));
+            }
+            return patient;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

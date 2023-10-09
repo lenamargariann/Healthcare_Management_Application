@@ -33,8 +33,8 @@ public class PatientService {
     }
 
     @Transactional
-    public void savePatientData(Patient patient) {
-        patientRepository.savePatient(patient);
+    public long savePatientData(Patient patient) {
+        return patientRepository.savePatient(patient);
     }
 
     @Transactional
@@ -49,7 +49,10 @@ public class PatientService {
 
     @Transactional
     public Patient getPatientById(Long id) {
-        return patientRepository.getPatientById(id);
+        Patient patient = patientRepository.getPatientById(id);
+        patient.setAppointments(appointmentRepository.getAppointmentsByPatientId(id));
+        patient.setPrescriptions(prescriptionRepository.getPrescriptionsByPatientId(id));
+        return patient;
     }
 
     public List<Patient> listPatients() {
@@ -57,7 +60,7 @@ public class PatientService {
     }
 
     public List<Patient> findPatients(String key) {
-      return   patientRepository.findPatients(key);
+        return patientRepository.findPatients(key);
     }
 
     public List<Appointment> getPatientAppointments(Long id) {

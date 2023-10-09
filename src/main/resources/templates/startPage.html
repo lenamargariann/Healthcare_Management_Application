@@ -9,16 +9,47 @@
     <h1 style="text-align: center;">Patients Records</h1>
 </header>
 
-<div style="text-align: center;">
-    <form th:action="@{/search}" method="post">
-        <div class="input-group-append">
+<div style="text-align: center; align-items: center">
+    <form>
+        <div class="input-group-append" style="align-items: center;">
             <input type="text" class="form-control" placeholder="Search for a patient..." name="name"
-                   th:value="${userInput}">
+                   th:value="${userInput}" id="input_id" onsubmit="this.updateList()">
             <span class="input-group-append">
-                <button type="submit" class="btn btn-primary">Search</button>
+                <button type="submit" class="btn btn-primary" id="search_btn">Search</button>
+                <button type="button" class="btn btn-secondary" id="addPatientBtn">Add Patient</button>
             </span>
         </div>
+
+
     </form>
+
+    <!-- Patient Form (Initially Hidden) -->
+    <div id="patientForm" style="display: none;">
+        <h3>Add New Patient</h3>
+        <form id="newPatientForm">
+            <div class="form-group" style="margin: 5px">
+                <label for="firstName">First Name:</label>
+                <input type="text" class="form-control" id="firstName" name="firstName">
+            </div>
+            <div class="form-group" style="margin: 5px">
+                <label for="lastName">Last Name: </label>
+                <input type="text" class="form-control" id="lastName" name="lastName">
+            </div>
+            <div class="form-group" style="margin: 5px">
+                <label for="birthdate">Birthdate: </label>
+                <input type="date" class="form-control" id="birthdate" name="birthdate">
+            </div>
+            <div class="form-group" style="margin: 5px">
+                <label for="gender">Gender: </label>
+                <select class="form-control" id="gender" name="gender">
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
 </div>
 
 <div>
@@ -45,17 +76,180 @@
         </li>
     </ul>
 </div>
+<div id="prescriptionFormDiv" style="display: none;">
+    <h3>Add Prescription</h3>
+    <form id="prescriptionForm">
+        <label for="prescriptionName">Name:</label>
+        <input type="text" id="prescriptionName" name="prescriptionName"><br>
+        <label for="daysCount">Days Count:</label>
+        <input type="number" id="daysCount" name="daysCount"><br>
+        <button type="submit">Submit</button>
+    </form>
+</div>
 <script>
-    var listItems = document.querySelectorAll("#myList li");
+    var listItems = document.querySelectorAll("#myList");
 
     listItems.forEach(function (item) {
         item.addEventListener("click", function () {
-            window.location.href = "/patient/" + item.getAttribute("data-patient-id")
+            window.location.href = "/patient?patientId=" + item.getAttribute("data-patient-id")
         });
     });
+    var searchButton = document.querySelector("button[id='search_btn']");
+    var searchInput = document.querySelector("input[id='input_id']");
+
+    function updateList() {
+        var searchText = searchInput.value.toLowerCase().trim();
+        listItems.forEach(function (item) {
+            var patientName = item.querySelector("span").textContent.toLowerCase();
+            if (patientName.includes(searchText)) {
+                item.style.display = "block"; // Show matching items
+            } else {
+                item.style.display = "none"; // Hide non-matching items
+            }
+        });
+    }
+
+    // Add a click event listener to the search button
+    searchButton.addEventListener("click", function (e) {
+        e.preventDefault(); // Prevent form submission
+        updateList(); // Call the updateList function
+    });
+
+    // Initial update to handle pre-filled search input
+    updateList();
+    // });
+    var addPatientBtn = document.getElementById("addPatientBtn");
+
+    // Get a reference to the patient form
+    var patientForm = document.getElementById("patientForm");
+
+    // Add an onclick listener to the button
+    addPatientBtn.addEventListener("click", function () {
+        // Show the patient form by setting its style.display property to "block"
+        // Get a reference to the element
+
+        var isDisplayed = window.getComputedStyle(patientForm).getPropertyValue("display");
+
+        if (isDisplayed === "none") {
+            patientForm.style.display = "block";
+            addPatientBtn.textContent = "Hide Form";
+        } else {
+            patientForm.style.display = "none";
+            addPatientBtn.textContent = "Add Patient";
+
+        }
+
+
+    });
+    // Get a reference to the form element
+    var form = document.getElementById("newPatientForm");
+
+    // Add a submit event listener to the form
+    form.addEventListener("submit", function (event) {
+        // Prevent the form from submitting by default
+        event.preventDefault();
+
+        // Get references to the input fields
+        var firstNameInput = document.getElementById("firstName");
+        var lastNameInput = document.getElementById("lastName");
+        var birthdateInput = document.getElementById("birthdate");
+        var genderInput = document.getElementById("gender");
+
+        // Get the values from the input fields
+        var firstNameVal = firstNameInput.value.trim();
+        var lastNameVal = lastNameInput.value.trim();
+        var birthdateVal = birthdateInput.value.trim();
+        var genderVal = genderInput.value.trim();
+
+        // Validate that all fields are non-empty
+        if (firstNameVal === "" || lastNameVal === "" || birthdateVal === "" || genderVal === "") {
+            alert("All fields are required.");
+            return;
+        }
+        var patientData = {
+            firstname: firstNameVal,
+            lastname: lastNameVal,
+            birthdate: birthdateVal,
+            gender: genderVal
+        };
+        fetch("/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(patientData)
+        })
+            .then(function (response) {
+                // Handle the response here
+                if (response.ok) {
+                    console.log(response.body);
+                    response.json()
+                        .then(data => {
+                            var id = data.patientId;
+                            console.log('Value associated with "id":', id);
+                            addPatientToList(id, firstNameVal, lastNameVal, birthdateVal, genderVal);
+                        });
+                    patientForm.style.display = "none";
+                    addPatientBtn.textContent = "Add Patient";
+                } else {
+                    alert("Failed to add prescription.");
+                }
+            })
+            .catch(function (error) {
+                console.error("Error:", error);
+            });
+        // form.reset();
+    });
+
+    function addPatientToList(id, firstname, lastname, birthdate, gender) {
+        // Get a reference to the <ul> element where patients are listed
+        var ul = document.querySelector("ul");
+
+        // Create a new <li> element for the patient
+        var li = document.createElement("li");
+        li.setAttribute("th:data-patient-id", "new-patient"); // Set a temporary ID for the new patient
+
+        // Create the HTML structure for the patient information
+        var patientInfo = document.createElement("span");
+        patientInfo.style.width = "65%";
+        patientInfo.style.display = "inline-block";
+        patientInfo.style.marginLeft = "30px";
+        patientInfo.style.margin = "5px";
+        patientInfo.innerHTML = `
+        <span>${firstname}</span>
+        <span>${lastname}</span>
+    `;
+
+        // Create the HTML structure for the patient's gender
+        var patientGender = document.createElement("span");
+        patientGender.style.width = "30%";
+        patientGender.style.display = "inline-block";
+        patientGender.style.marginRight = "30px";
+        patientGender.style.alignSelf = "end";
+        patientGender.style.padding = "5px";
+        patientGender.textContent = gender;
+
+        // Append the patient information and gender to the <li> element
+        li.appendChild(patientInfo);
+        li.appendChild(patientGender);
+
+        // Append the <li> element to the <ul>
+        ul.appendChild(li);
+
+        // Clear the temporary ID and set a new one based on the patient's ID
+        li.removeAttribute("th:data-patient-id");
+        li.setAttribute("th:data-patient-id", id);
+        li.addEventListener("click", function () {
+            window.location.href = "/patient?patientId=" + id;
+        });
+        updateList()
+    }
+
+    // Example usage:
+
 </script>
 
-<script type="module" src="js/UpdateList.js"></script>
+<!--<script type="module" src="js/UpdateList.js"></script>-->
 
 </body>
 </html>

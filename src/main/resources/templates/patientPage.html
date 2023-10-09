@@ -1,10 +1,188 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title style="">Patient Details</title>
 </head>
-<body>
+<body style="padding-left: 15px">
+<h1>Patient Details</h1>
 
+<div>
+    <h2>Patient Information</h2>
+    <p th:text="${patient.firstName}+' '+${patient.lastName}" id="patient-name"></p>
+    <!--    <p th:text="${patient.lastName}"></p>-->
+    <p th:text="${patient.dateOfBirth}"></p>
+    <p th:text="${patient.gender}"></p>
+
+</div>
+
+<div>
+    <h2>Prescriptions</h2>
+    <ul id="prescriptionList">
+        <li th:each="prescription : ${patient.prescriptions}" style="margin: 5px;">
+            <p th:text="${prescription.name} + ' - ' + ${prescription.daysCount} + ' days'"></p>
+
+        </li>
+        <li th:if="${#lists.isEmpty(patient.prescriptions)}" id="empty_tag_prescriptions" style="margin: 5px;">
+            <p>No prescriptions available.</p>
+        </li>
+    </ul>
+    <button id="addPrescriptionBtn" style="margin: 5px;">Add Prescription</button>
+</div>
+
+<div id="prescriptionFormDiv" style="display: none;">
+    <h3>Add Prescription</h3>
+    <form id="prescriptionForm">
+        <label for="prescriptionName">Name:</label>
+        <input type="text" id="prescriptionName" name="prescriptionName" style="margin: 5px;"><br>
+        <label for="daysCount">Days Count:</label>
+        <input type="number" id="daysCount" name="daysCount" th:patient-name="${patient.getId()}" style="margin: 5px;"><br>
+        <button type="submit" style="margin: 3px;">Submit</button>
+    </form>
+</div>
+<div>
+    <h2>Appointments</h2>
+    <ul id="appointmentList">
+        <li th:each="appointment : ${patient.appointments}" style="margin: 5px;">
+            <p th:text="${appointment.doctor} + ' - ' + ${appointment.date}"></p>
+        </li>
+        <li th:if="${#lists.isEmpty(patient.appointments)}" id="empty_tag_appointments" style="margin: 5px;">
+            <p>No appointments available.</p>
+        </li>
+    </ul>
+    <button id="addAppointmentBtn" style="margin: 5px;">Add Appointment</button>
+</div>
+<div id="appointmentFormDiv" style="display: none;">
+    <h3>Add Appointment</h3>
+    <form id="appointmentForm">
+        <label for="appointmentDate">Date:</label>
+        <input type="date" id="appointmentDate" name="appointmentDate" style="margin: 5px;"><br>
+        <label for="appointmentDoctor">Doctor:</label>
+        <input type="text" id="appointmentDoctor" name="appointmentDoctor" style="margin: 5px;"><br>
+        <button type="submit" style="margin: 3px;">Submit</button>
+    </form>
+</div>
+<script>
+    // JavaScript click listener for "Add Appointment" button
+    var addAppointmentBtn = document.getElementById("addAppointmentBtn");
+    var appointmentForm = document.getElementById("appointmentForm");
+    var appointmentFormDiv = document.getElementById("appointmentFormDiv");
+    addAppointmentBtn.addEventListener("click", function () {
+        // Your logic for handling the click event goes here
+        appointmentFormDiv.style.display = "block";
+    });
+
+
+    appointmentForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        // Get the data from the input fields
+        var appointmentDate = document.getElementById("appointmentDate").value;
+        var appointmentDoctor = document.getElementById("appointmentDoctor").value;
+        var patientIdValue = document.getElementById("daysCount").getAttribute("patient-name");
+
+        // Create an object with the data
+        var appointmentData = {
+            patientId: patientIdValue,
+            date: appointmentDate,
+            doctor: appointmentDoctor
+        };
+
+        // Make a POST request to send the data to the server
+        fetch("/patient/addAppointment", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(appointmentData)
+        })
+            .then(function (response) {
+                console.log(response.status);
+                if (response.ok) {
+                    alert("Appointment added successfully!");
+                    updateAttributesList(appointmentDate, appointmentDoctor, "appointmentList");
+                    var listItem = document.getElementById("empty_tag_appointments");
+                    listItem.style.display = "none";
+                    appointmentFormDiv.style.display = "none";
+                    // You may update the appointment list without a page refresh here
+                } else {
+                    alert("Failed to add appointment.");
+                }
+            })
+            .catch(function (error) {
+                console.error("Error:", error);
+            });
+    });
+    var addPrescriptionBtn = document.getElementById("addPrescriptionBtn");
+    var prescriptionForm = document.getElementById("prescriptionForm");
+    var prescriptionFormDiv = document.getElementById("prescriptionFormDiv");
+    addPrescriptionBtn.addEventListener("click", function () {
+        prescriptionFormDiv.style.display = "block";
+    });
+    prescriptionForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        // Get the data from the input fields
+        var prescriptionName = document.getElementById("prescriptionName").value;
+        var daysCount = document.getElementById("daysCount").value;
+        var patientIdValue = document.getElementById("daysCount").getAttribute("patient-name");
+        console.log(patientIdValue);
+        // Create an object with the data
+        var prescriptionData = {
+            patientId: patientIdValue,
+            name: prescriptionName,
+            daysCount: daysCount
+        };
+
+        // Make a POST request to send the data to the server
+        fetch("/patient/addPrescription", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(prescriptionData)
+        })
+            .then(function (response) {
+                // Handle the response here
+                if (response.ok) {
+                    // alert("Prescription added successfully!");
+                    // Hide the prescription form
+                    updateAttributesList(prescriptionName, daysCount, "prescriptionList")
+                    var listItem = document.getElementById("empty_tag_prescriptions");
+                    listItem.style.display = "none";
+                    prescriptionFormDiv.style.display = "none";
+                    // You may update the prescription list without a page refresh here
+                } else {
+                    alert("Failed to add prescription.");
+                }
+            })
+            .catch(function (error) {
+                console.error("Error:", error);
+            });
+    });
+
+    function updateAttributesList(val1, val2, list) {
+        // Get the appointment list <ul> element
+        var appointmentList = document.getElementById(list);
+
+        // Create a new <li> element to hold appointment details
+        var newAppointmentItem = document.createElement("li");
+
+        // Create <p> elements to display appointment data
+        var paragraph = document.createElement("p");
+        paragraph.style.margin = "5px"
+
+        // Set the text content for the <p> elements
+        paragraph.textContent = val1 + " - " + val2;
+
+        // Append the <p> elements to the <li> element
+        newAppointmentItem.appendChild(paragraph);
+
+
+        // Append the new <li> element to the appointment list
+        appointmentList.appendChild(newAppointmentItem);
+    }
+
+</script>
 </body>
 </html>
